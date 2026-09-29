@@ -10,8 +10,13 @@ import { ApplicationStatus, JobStatus } from '@prisma/client';
 describe('ApplicationsService (Unit & Security Suite)', () => {
   let service: ApplicationsService;
   let mockPrismaService: any;
+  let mockNotificationsService: any;
 
   beforeEach(() => {
+    mockNotificationsService = {
+      createNotification: vi.fn().mockResolvedValue({ id: 'notif-1' }),
+    };
+
     mockPrismaService = {
       studentProfile: {
         findUnique: vi.fn(),
@@ -40,7 +45,10 @@ describe('ApplicationsService (Unit & Security Suite)', () => {
       $transaction: vi.fn((cb) => cb(mockPrismaService)),
     };
 
-    service = new ApplicationsService(mockPrismaService as any);
+    service = new ApplicationsService(
+      mockPrismaService as any,
+      mockNotificationsService as any,
+    );
   });
 
   describe('Student Apply & Duplicate Prevention', () => {

@@ -502,5 +502,259 @@ export async function getApplicationResumeDownloadUrl(
   );
 }
 
+// ==========================================
+// Phase 8: Notification API Helpers & Types
+// ==========================================
+
+export type NotificationType =
+  | 'APPLICATION_SUBMITTED'
+  | 'APPLICATION_STATUS_CHANGED'
+  | 'JOB_POSTED'
+  | 'JOB_CLOSED'
+  | 'RESUME_REQUIRED'
+  | 'SYSTEM';
+
+export interface NotificationItem {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getNotifications(
+  token: string,
+  page = 1,
+  limit = 10,
+  unreadOnly = false,
+): Promise<PaginatedResponse<NotificationItem>> {
+  const query = new URLSearchParams();
+  query.append('page', String(page));
+  query.append('limit', String(limit));
+  if (unreadOnly) query.append('unreadOnly', 'true');
+  return apiFetch<PaginatedResponse<NotificationItem>>(
+    `/notifications?${query.toString()}`,
+    { method: 'GET' },
+    token,
+  );
+}
+
+export async function getUnreadNotificationCount(
+  token: string,
+): Promise<{ unreadCount: number }> {
+  return apiFetch<{ unreadCount: number }>(
+    '/notifications/unread-count',
+    { method: 'GET' },
+    token,
+  );
+}
+
+export async function markNotificationAsRead(
+  token: string,
+  id: string,
+): Promise<NotificationItem> {
+  return apiFetch<NotificationItem>(
+    `/notifications/${id}/read`,
+    { method: 'PATCH' },
+    token,
+  );
+}
+
+export async function markAllNotificationsAsRead(
+  token: string,
+): Promise<{ count: number }> {
+  return apiFetch<{ count: number }>(
+    '/notifications/read-all',
+    { method: 'PATCH' },
+    token,
+  );
+}
+
+export async function deleteNotification(
+  token: string,
+  id: string,
+): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>(
+    `/notifications/${id}`,
+    { method: 'DELETE' },
+    token,
+  );
+}
+
+// ==========================================
+// Phase 8: Analytics API Helpers & Types
+// ==========================================
+
+export interface StudentAnalytics {
+  totalApplications: number;
+  byStatus: Record<string, number>;
+}
+
+export async function getStudentAnalytics(
+  token: string,
+): Promise<StudentAnalytics> {
+  return apiFetch<StudentAnalytics>(
+    '/students/me/analytics',
+    { method: 'GET' },
+    token,
+  );
+}
+
+export interface RecruiterAnalytics {
+  totalJobs: number;
+  activeJobs: number;
+  closedJobs: number;
+  totalApplications: number;
+  byStatus: Record<string, number>;
+  jobPerformance: Array<{
+    jobId: string;
+    title: string;
+    status: JobStatus;
+    applicationCount: number;
+  }>;
+}
+
+export async function getRecruiterAnalytics(
+  token: string,
+): Promise<RecruiterAnalytics> {
+  return apiFetch<RecruiterAnalytics>(
+    '/recruiters/me/analytics',
+    { method: 'GET' },
+    token,
+  );
+}
+
+// ==========================================
+// Phase 8: Admin API Helpers & Types
+// ==========================================
+
+export interface AdminAnalytics {
+  users: { total: number; students: number; recruiters: number; admins: number };
+  companies: { total: number; verified: number };
+  jobs: { total: number; active: number; closed: number };
+  applications: { total: number; byStatus: Record<string, number> };
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  role: 'STUDENT' | 'RECRUITER' | 'ADMIN';
+  isActive: boolean;
+  createdAt: string;
+  studentProfile?: { id: string; name: string; college?: string; degree?: string };
+  recruiterProfile?: { id: string; name: string; designation?: string; company?: { id: string; name: string } };
+}
+
+export interface AdminCompany {
+  id: string;
+  name: string;
+  website?: string | null;
+  isVerified: boolean;
+  createdAt: string;
+  location?: Location | null;
+  _count?: { jobs: number };
+}
+
+export async function getAdminAnalytics(token: string): Promise<AdminAnalytics> {
+  return apiFetch<AdminAnalytics>('/admin/analytics', { method: 'GET' }, token);
+}
+
+export async function getAdminUsers(
+  token: string,
+  page = 1,
+  limit = 10,
+  role?: string,
+  search?: string,
+): Promise<PaginatedResponse<AdminUser>> {
+  const query = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (role) query.append('role', role);
+  if (search) query.append('search', search);
+  return apiFetch<PaginatedResponse<AdminUser>>(`/admin/users?${query.toString()}`, { method: 'GET' }, token);
+}
+
+export async function updateAdminUserStatus(
+  token: string,
+  userId: string,
+  isActive: boolean,
+): Promise<AdminUser> {
+  return apiFetch<AdminUser>(
+    `/admin/users/${userId}/status`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ isActive }),
+    },
+    token,
+  );
+}
+
+export async function getAdminCompanies(
+  token: string,
+  page = 1,
+  limit = 10,
+  search?: string,
+): Promise<PaginatedResponse<AdminCompany>> {
+  const query = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (search) query.append('search', search);
+  return apiFetch<PaginatedResponse<AdminCompany>>(`/admin/companies?${query.toString()}`, { method: 'GET' }, token);
+}
+
+export async function updateAdminCompanyVerification(
+  token: string,
+  companyId: string,
+  isVerified: boolean,
+): Promise<AdminCompany> {
+  return apiFetch<AdminCompany>(
+    `/admin/companies/${companyId}/verify`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ isVerified }),
+    },
+    token,
+  );
+}
+
+export async function getAdminJobs(
+  token: string,
+  page = 1,
+  limit = 10,
+  status?: string,
+  search?: string,
+): Promise<PaginatedResponse<Job>> {
+  const query = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (status) query.append('status', status);
+  if (search) query.append('search', search);
+  return apiFetch<PaginatedResponse<Job>>(`/admin/jobs?${query.toString()}`, { method: 'GET' }, token);
+}
+
+export async function updateAdminJobStatus(
+  token: string,
+  jobId: string,
+  status: JobStatus,
+): Promise<Job> {
+  return apiFetch<Job>(
+    `/admin/jobs/${jobId}/status`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    },
+    token,
+  );
+}
+
+export async function getAdminApplications(
+  token: string,
+  page = 1,
+  limit = 10,
+  status?: string,
+): Promise<PaginatedResponse<Application>> {
+  const query = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (status) query.append('status', status);
+  return apiFetch<PaginatedResponse<Application>>(`/admin/applications?${query.toString()}`, { method: 'GET' }, token);
+}
+
+
 
 

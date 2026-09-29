@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { LogIn, UserPlus, LogOut, ShieldCheck, UserCheck, Briefcase, FileText } from 'lucide-react';
 
 export default function Home() {
@@ -27,6 +28,7 @@ export default function Home() {
               <div className="h-8 w-24 animate-pulse rounded-lg bg-slate-800" />
             ) : isAuthenticated && user ? (
               <div className="flex items-center gap-4">
+                <NotificationBell />
                 <div className="text-right">
                   <p className="text-sm font-semibold text-white">
                     {user.name || user.email.split('@')[0]}

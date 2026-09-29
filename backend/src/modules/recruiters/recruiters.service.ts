@@ -120,4 +120,69 @@ export class RecruitersService {
       profileCompletion: completion,
     };
   }
+
+  /**
+   * Get recruiter analytics (total jobs, applications breakdown, per-job performance)
+   */
+  async getAnalytics(userId: string) {
+    const recruiter = await this.prisma.recruiterProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!recruiter) {
+      throw new NotFoundException('Recruiter profile not found');
+    }
+
+    const jobs = await this.prisma.job.findMany({
+      where: { recruiterId: recruiter.id },
+      include: {
+        applications: {
+          select: { status: true },
+        },
+      },
+    });
+
+    const totalJobs = jobs.length;
+    const activeJobs = jobs.filter((j) => j.status === 'ACTIVE').length;
+    const closedJobs = jobs.filter((j) => j.status === 'CLOSED').length;
+
+    let totalApplications = 0;
+    const byStatus: Record<string, number> = {
+      APPLIED: 0,
+      UNDER_REVIEW: 0,
+      SHORTLISTED: 0,
+      INTERVIEW_SCHEDULED: 0,
+      OFFERED: 0,
+      REJECTED: 0,
+    };
+
+    const jobPerformance = jobs.map((job) => {
+      const appCount = job.applications.length;
+      totalApplications += appCount;
+
+      job.applications.forEach((app) => {
+        if (byStatus[app.status] !== undefined) {
+          byStatus[app.status]++;
+        } else {
+          byStatus[app.status] = 1;
+        }
+      });
+
+      return {
+        jobId: job.id,
+        title: job.title,
+        status: job.status,
+        applicationCount: appCount,
+      };
+    });
+
+    return {
+      totalJobs,
+      activeJobs,
+      closedJobs,
+      totalApplications,
+      byStatus,
+      jobPerformance,
+    };
+  }
 }

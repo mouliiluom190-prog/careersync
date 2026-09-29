@@ -205,4 +205,45 @@ export class StudentsService {
 
     return { message: 'Skill removed successfully' };
   }
+
+  /**
+   * Get student analytics (total applications, status breakdown)
+   */
+  async getAnalytics(userId: string) {
+    const profile = await this.prisma.studentProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!profile) {
+      throw new NotFoundException('Student profile not found');
+    }
+
+    const applications = await this.prisma.application.findMany({
+      where: { studentProfileId: profile.id },
+      select: { status: true },
+    });
+
+    const totalApplications = applications.length;
+    const byStatus: Record<string, number> = {
+      APPLIED: 0,
+      UNDER_REVIEW: 0,
+      SHORTLISTED: 0,
+      INTERVIEW_SCHEDULED: 0,
+      OFFERED: 0,
+      REJECTED: 0,
+    };
+
+    applications.forEach((app: { status: string }) => {
+      if (byStatus[app.status] !== undefined) {
+        byStatus[app.status]++;
+      } else {
+        byStatus[app.status] = 1;
+      }
+    });
+
+    return {
+      totalApplications,
+      byStatus,
+    };
+  }
 }

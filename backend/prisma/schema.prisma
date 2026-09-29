@@ -20,15 +20,18 @@ model User {
   email        String            @unique
   passwordHash String
   role         Role              @default(STUDENT)
+  isActive     Boolean           @default(true)
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 
   studentProfile   StudentProfile?
   recruiterProfile RecruiterProfile?
   authSessions     AuthSession[]
+  notifications    Notification[]
 
   @@index([email])
   @@index([role])
+  @@index([isActive])
 }
 
 model AuthSession {
@@ -93,12 +96,14 @@ model Company {
   logoUrl     String?
   locationId  String?
   location    Location?          @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  isVerified  Boolean            @default(false)
   recruiters  RecruiterProfile[]
   jobs        Job[]
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
 
   @@index([name])
+  @@index([isVerified])
 }
 
 model Skill {
@@ -277,5 +282,30 @@ model ApplicationStatusHistory {
   createdAt       DateTime          @default(now())
 
   @@index([applicationId])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  APPLICATION_SUBMITTED
+  APPLICATION_STATUS_CHANGED
+  JOB_POSTED
+  JOB_CLOSED
+  RESUME_REQUIRED
+  SYSTEM
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType @default(SYSTEM)
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([isRead])
   @@index([createdAt])
 }

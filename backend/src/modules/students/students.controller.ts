@@ -50,6 +50,11 @@ export class StudentsController {
     return profile.skills || [];
   }
 
+  @Get('me/analytics')
+  async getAnalytics(@CurrentUser('id') userId: string) {
+    return this.studentsService.getAnalytics(userId);
+  }
+
   @Post('me/skills')
   async addSkill(
     @CurrentUser('id') userId: string,

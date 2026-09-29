@@ -10,11 +10,15 @@ import { CreateApplicationDto } from './dto/create-application.dto.js';
 import { UpdateApplicationStatusDto } from './dto/update-application-status.dto.js';
 import { WithdrawApplicationDto } from './dto/withdraw-application.dto.js';
 import { ApplicationQueryDto } from './dto/application-query.dto.js';
-import { ApplicationStatus, JobStatus } from '@prisma/client';
+import { ApplicationStatus, JobStatus, NotificationType } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 @Injectable()
 export class ApplicationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   /**
    * Helper to fetch student profile
@@ -150,6 +154,22 @@ export class ApplicationsService {
 
       return appRecord;
     });
+
+    // Notify recruiter of new application
+    const recruiterProfile = await this.prisma.recruiterProfile.findUnique({
+      where: { id: job.recruiterId },
+      select: { userId: true },
+    });
+    if (recruiterProfile?.userId) {
+      await this.notificationsService
+        .createNotification({
+          userId: recruiterProfile.userId,
+          type: NotificationType.APPLICATION_SUBMITTED,
+          title: 'New Application Received',
+          message: `A candidate has applied for '${job.title}'`,
+        })
+        .catch(() => {});
+    }
 
     return application;
   }
@@ -479,6 +499,18 @@ export class ApplicationsService {
 
       return appRecord;
     });
+
+    // Notify student of status update
+    if (updated.studentProfile?.userId) {
+      await this.notificationsService
+        .createNotification({
+          userId: updated.studentProfile.userId,
+          type: NotificationType.APPLICATION_STATUS_CHANGED,
+          title: 'Application Status Updated',
+          message: `Your application status for '${updated.job?.title || 'a job'}' is now ${dto.status.replace('_', ' ')}`,
+        })
+        .catch(() => {});
+    }
 
     return updated;
   }

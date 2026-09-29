@@ -141,7 +141,7 @@ export class ResumesController {
    * Secure Proxy Stream Route for Local Storage Provider
    * Validates signed HMAC token signature before streaming file
    */
-  @Get('file-stream/:key(*)')
+  @Get('file-stream/*key')
   async streamLocalFile(
     @Param('key') rawKey: string,
     @Query('expires') expiresStr: string,

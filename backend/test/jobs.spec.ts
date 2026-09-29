@@ -6,8 +6,16 @@ import { JobStatus, EmploymentType, ExperienceLevel, WorkMode } from '@prisma/cl
 describe('JobsService (Unit & Security Suite)', () => {
   let service: JobsService;
   let mockPrismaService: any;
+  let mockRedisService: any;
 
   beforeEach(() => {
+    mockRedisService = {
+      get: vi.fn().mockResolvedValue(null),
+      set: vi.fn().mockResolvedValue(true),
+      del: vi.fn().mockResolvedValue(true),
+      invalidatePattern: vi.fn().mockResolvedValue(true),
+    };
+
     mockPrismaService = {
       recruiterProfile: {
         findUnique: vi.fn(),
@@ -32,7 +40,7 @@ describe('JobsService (Unit & Security Suite)', () => {
       },
     };
 
-    service = new JobsService(mockPrismaService as any);
+    service = new JobsService(mockPrismaService as any, mockRedisService as any);
   });
 
   describe('createJob', () => {

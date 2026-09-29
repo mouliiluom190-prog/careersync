@@ -5,6 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service.js';
+import { RedisService } from '../redis/redis.service.js';
 import { CreateJobDto } from './dto/create-job.dto.js';
 import { UpdateJobDto } from './dto/update-job.dto.js';
 import { SearchJobsDto } from './dto/search-jobs.dto.js';
@@ -12,7 +13,10 @@ import { JobStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class JobsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redisService: RedisService,
+  ) {}
 
   /**
    * Helper to fetch authenticated recruiter profile
@@ -111,6 +115,7 @@ export class JobsService {
       },
     });
 
+    await this.redisService.invalidatePattern('jobs:search:*');
     return job;
   }
 
@@ -289,6 +294,7 @@ export class JobsService {
       });
     });
 
+    await this.redisService.invalidatePattern('jobs:search:*');
     return updatedJob;
   }
 
@@ -312,7 +318,7 @@ export class JobsService {
       );
     }
 
-    return this.prisma.job.update({
+    const updated = await this.prisma.job.update({
       where: { id: jobId },
       data: { status },
       include: {
@@ -325,12 +331,25 @@ export class JobsService {
         },
       },
     });
+
+    await this.redisService.invalidatePattern('jobs:search:*');
+    return updated;
   }
 
   /**
    * Browse & search active public jobs (Students / All Users)
    */
   async findAllPublicJobs(dto: SearchJobsDto) {
+    const cacheKey = `jobs:search:${JSON.stringify(dto)}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch {
+        // Fallback to database if cached payload is corrupted
+      }
+    }
+
     const page = dto.page || 1;
     const limit = dto.limit || 10;
     const skip = (page - 1) * limit;
@@ -405,7 +424,7 @@ export class JobsService {
       this.prisma.job.count({ where }),
     ]);
 
-    return {
+    const result = {
       data,
       meta: {
         page,
@@ -414,6 +433,9 @@ export class JobsService {
         totalPages: Math.ceil(total / limit) || 1,
       },
     };
+
+    await this.redisService.set(cacheKey, JSON.stringify(result), 1800);
+    return result;
   }
 
   /**

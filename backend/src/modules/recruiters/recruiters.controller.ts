@@ -40,4 +40,9 @@ export class RecruitersController {
   ) {
     return this.recruitersService.updateProfile(userId, dto);
   }
+
+  @Get('me/analytics')
+  async getAnalytics(@CurrentUser('id') userId: string) {
+    return this.recruitersService.getAnalytics(userId);
+  }
 }
