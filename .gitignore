@@ -8,6 +8,7 @@ frontend/out/
 
 # NestJS build outputs
 backend/dist/
+*.tsbuildinfo
 
 # Environment files
 .env
@@ -48,6 +49,7 @@ pnpm-debug.log*
 *.db
 pgdata/
 redisdata/
+uploads/
 
 # Testing & Coverage
 coverage/

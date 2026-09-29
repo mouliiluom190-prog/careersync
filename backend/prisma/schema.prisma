@@ -1,0 +1,281 @@
+// CareerSync Prisma Schema - Phase 4 Profile & Company Foundation
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  RECRUITER
+  ADMIN
+}
+
+model User {
+  id           String            @id @default(uuid())
+  email        String            @unique
+  passwordHash String
+  role         Role              @default(STUDENT)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  studentProfile   StudentProfile?
+  recruiterProfile RecruiterProfile?
+  authSessions     AuthSession[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model AuthSession {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+model StudentProfile {
+  id              String        @id @default(uuid())
+  userId          String        @unique
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  phone           String?
+  college         String?
+  degree          String?
+  department      String?
+  graduationYear  Int?
+  cgpa            Float?
+  bio             String?
+  profileImageUrl String?
+  locationId      String?
+  location        Location?     @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  skills          StudentSkill[]
+  applications    Application[]
+  resumes         Resume[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model RecruiterProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  phone           String?
+  designation     String?
+  bio             String?
+  profileImageUrl String?
+  companyId       String?
+  company         Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  jobs            Job[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Company {
+  id          String             @id @default(uuid())
+  name        String
+  description String?
+  website     String?
+  email       String?
+  phone       String?
+  logoUrl     String?
+  locationId  String?
+  location    Location?          @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  recruiters  RecruiterProfile[]
+  jobs        Job[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([name])
+}
+
+model Skill {
+  id        String         @id @default(uuid())
+  name      String         @unique
+  students  StudentSkill[]
+  jobs      JobSkill[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([name])
+}
+
+model StudentSkill {
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  skillId   String
+  skill     Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+
+  @@id([studentId, skillId])
+}
+
+model Location {
+  id         String   @id @default(uuid())
+  address    String?
+  city       String?
+  state      String?
+  country    String?
+  postalCode String?
+  latitude   Float?
+  longitude  Float?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  students  StudentProfile[]
+  companies Company[]
+  jobs      Job[]
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  INTERNSHIP
+  CONTRACT
+  TEMPORARY
+}
+
+enum ExperienceLevel {
+  ENTRY
+  JUNIOR
+  MID
+  SENIOR
+  LEAD
+}
+
+enum WorkMode {
+  ONSITE
+  REMOTE
+  HYBRID
+}
+
+enum JobStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  EXPIRED
+}
+
+model Job {
+  id                  String           @id @default(uuid())
+  recruiterId         String
+  recruiter           RecruiterProfile @relation(fields: [recruiterId], references: [id], onDelete: Cascade)
+  companyId           String
+  company             Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title               String
+  description         String
+  employmentType      EmploymentType   @default(FULL_TIME)
+  experienceLevel     ExperienceLevel  @default(ENTRY)
+  workMode            WorkMode         @default(ONSITE)
+  salaryMin           Float?
+  salaryMax           Float?
+  salaryCurrency      String?          @default("INR")
+  locationId          String?
+  location            Location?        @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  openings            Int              @default(1)
+  applicationDeadline DateTime?
+  status              JobStatus        @default(ACTIVE)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  skills              JobSkill[]
+  applications        Application[]
+
+  @@index([status])
+  @@index([recruiterId])
+  @@index([companyId])
+  @@index([locationId])
+  @@index([employmentType])
+  @@index([experienceLevel])
+  @@index([workMode])
+  @@index([createdAt])
+}
+
+model JobSkill {
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  skillId   String
+  skill     Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([jobId, skillId])
+}
+
+enum ApplicationStatus {
+  APPLIED
+  UNDER_REVIEW
+  SHORTLISTED
+  INTERVIEW
+  SELECTED
+  REJECTED
+  WITHDRAWN
+}
+
+model Resume {
+  id               String         @id @default(uuid())
+  studentProfileId String
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  originalFileName String
+  storageKey       String
+  mimeType         String
+  fileSize         Int
+  isDefault        Boolean        @default(false)
+  isArchived       Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  applications     Application[]
+
+  @@index([studentProfileId])
+  @@index([isDefault])
+  @@index([isArchived])
+}
+
+model Application {
+  id               String                   @id @default(uuid())
+  studentProfileId String
+  studentProfile   StudentProfile           @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  jobId            String
+  job              Job                      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  resumeId         String?
+  resume           Resume?                  @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  resumeUrl        String?
+  coverLetter      String?
+  status           ApplicationStatus        @default(APPLIED)
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  history          ApplicationStatusHistory[]
+
+  @@unique([studentProfileId, jobId])
+  @@index([studentProfileId])
+  @@index([jobId])
+  @@index([resumeId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ApplicationStatusHistory {
+  id              String            @id @default(uuid())
+  applicationId   String
+  application     Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  status          ApplicationStatus
+  note            String?
+  changedByUserId String
+  createdAt       DateTime          @default(now())
+
+  @@index([applicationId])
+  @@index([createdAt])
+}

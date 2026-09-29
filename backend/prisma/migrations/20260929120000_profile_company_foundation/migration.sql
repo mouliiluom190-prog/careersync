@@ -1,0 +1,11 @@
+-- AlterTable
+ALTER TABLE "StudentProfile" ADD COLUMN IF NOT EXISTS "degree" TEXT,
+ADD COLUMN IF NOT EXISTS "cgpa" DOUBLE PRECISION,
+ADD COLUMN IF NOT EXISTS "profileImageUrl" TEXT;
+
+-- AlterTable
+ALTER TABLE "RecruiterProfile" ADD COLUMN IF NOT EXISTS "bio" TEXT,
+ADD COLUMN IF NOT EXISTS "profileImageUrl" TEXT;
+
+-- AlterTable
+ALTER TABLE "Company" ADD COLUMN IF NOT EXISTS "logoUrl" TEXT;

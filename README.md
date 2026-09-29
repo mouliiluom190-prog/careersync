@@ -1,28 +1,103 @@
 # CareerSync
 
-CareerSync is a modern, production-grade full-stack job and internship platform built for students, recruiters, and administrators.
+CareerSync is a modern, production-grade full-stack job and internship platform designed to seamlessly connect students, recruiters, and educational institutions.
+
+## Technology Stack
+
+### Frontend
+- Next.js (App Router)
+- React
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- Lucide React
+
+### Backend
+- NestJS
+- Node.js
+- TypeScript
+- REST API
+
+### Database
+- PostgreSQL
+- PostGIS
+- Prisma
+
+### Security
+- JWT
+- Argon2
+- RBAC (Role-Based Access Control)
+
+### Development
+- Antigravity
+- Git
+- GitHub
+- Docker
 
 ## Project Structure
 
 ```text
 CareerSync/
-├── frontend/        # Next.js, React, TypeScript, Tailwind CSS, shadcn/ui, MapLibre GL
-├── backend/         # NestJS, Node.js, TypeScript, REST API, Zod
-├── infrastructure/  # Docker & infrastructure configuration
-├── docs/            # Architecture, API, and database documentation
-├── .gitignore       # Git exclusions
+├── frontend/        # Next.js frontend application & UI foundation
+├── backend/         # NestJS backend REST API service
+├── infrastructure/  # Docker & infrastructure configurations
+├── docs/            # Architecture & project documentation
+├── .gitignore       # Git exclusion patterns
 ├── README.md        # Main project documentation
 └── docker-compose.yml # Development infrastructure setup
 ```
 
-## Technology Stack
+## Getting Started
 
-- **Frontend:** Next.js, React, TypeScript, Tailwind CSS, shadcn/ui, Lucide React, MapLibre GL JS
-- **Backend:** NestJS, Node.js, TypeScript, REST API, Zod
-- **Database:** PostgreSQL + PostGIS, Prisma ORM
-- **Authentication:** JWT, Argon2, Role-Based Access Control (RBAC)
-- **Supporting:** Redis, Cloudinary / S3, Resend, Docker
+### Prerequisites
+- Node.js (v20+ recommended)
+- npm or yarn / pnpm
+- Docker & Docker Compose (for database and Redis infrastructure)
 
-## Setup & Development Instructions
+### Frontend Setup
 
-*Documentation will be updated as Phase 1 initialization proceeds.*
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Copy environment configuration:
+   ```bash
+   cp .env.example .env.local
+   ```
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+   The frontend will be available at [http://localhost:3000](http://localhost:3000).
+
+### Backend Setup
+
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Copy environment configuration:
+   ```bash
+   cp .env.example .env
+   ```
+4. Start the development server:
+   ```bash
+   npm run start:dev
+   ```
+   The backend API will be available at [http://localhost:5000/api](http://localhost:5000/api).
+   Health check endpoint: `GET http://localhost:5000/api/health`
+
+### Infrastructure Setup
+
+To spin up local database (PostgreSQL + PostGIS) and Redis services:
+```bash
+docker-compose up -d
+```
